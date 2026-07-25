@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+
+# Level-matched A/B between speaker tuning candidates.
+#
+#   omarchy-audio-tuning-compare [--start SEC] [--length SEC] TRACK
+#
+# One player per candidate is not used; instead a single player is moved to a
+# fresh sink per candidate, because loudness is the dominant bias in any
+# speaker comparison and each candidate must be trimmed to the same integrated
+# loudness before it can be judged.
+#
+# Loudness is measured from the hardware sink monitor, which sits upstream of
+# the hardware volume control, so the trim applied there is a transparent gain
+# change after all processing.
+
+hw="$(pactl list sinks short |
+  awk '$2 ~ /^alsa_output\..*sof_sdw.*HiFi__Speaker__sink$/ {print $2; exit}')"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-audio-tuning"
+
+start=0
+length=30
+
+while (($#)); do
+  case "$1" in
+    --start)
+      start="$2"
+      shift
+      ;;
+    --length)
+      length="$2"
+      shift
+      ;;
+    -h | --help)
+      sed -n '3,14p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *) track="$1" ;;
+  esac
+  shift
+done
+
+[[ -n ${track:-} && -e ${track:-} ]] || {
+  printf 'Usage: omarchy-audio-tuning-compare [--start SEC] [--length SEC] TRACK\n' >&2
+  exit 2
+}
+[[ -n $hw ]] || {
+  printf 'No internal speaker sink found.\n' >&2
+  exit 1
+}
+
+# Candidates are any filter-chain tuning sinks present, plus EasyEffects if it
+# is running, plus the untreated hardware path as a control.
+mapfile -t candidates < <(
+  pactl list sinks short | awk '{print $2}' |
+    grep -E '^(omarchy_speaker_tuning$|omarchy_tuning_|easyeffects_sink$)' || true
+)
+# The untreated path is only offered when EasyEffects is not running, because
+# EasyEffects moves any stream aimed at the speaker sink to itself, so the raw
+# candidate cannot actually be auditioned while it is active.
+if ! pactl list sinks short | awk '{print $2}' | grep -qx easyeffects_sink; then
+  candidates+=("$hw")
+fi
+
+((${#candidates[@]} > 1)) || {
+  printf 'Only the raw path is available; nothing to compare.\n' >&2
+  exit 1
+}
+
+label_for() {
+  case "$1" in
+    "$hw") printf 'raw (untreated)\n' ;;
+    omarchy_speaker_tuning) printf 'tuned (shipped)\n' ;;
+    easyeffects_sink) printf 'EasyEffects\n' ;;
+    *) printf '%s\n' "${1#omarchy_tuning_}" ;;
+  esac
+}
+
+mkdir -p "$state_dir"
+original_volume="$(pactl get-sink-volume "$hw" | awk 'NR==1 {print $3}')"
+previous_default="$(pactl get-default-sink)"
+
+cleanup() {
+  [[ -n ${player:-} ]] && kill "$player" 2>/dev/null || true
+  pactl set-sink-volume "$hw" "$original_volume" 2>/dev/null || true
+  pactl set-default-sink "$previous_default" 2>/dev/null || true
+  [[ -n ${stty_saved:-} ]] && stty "$stty_saved" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+play_on() {
+  local sink="$1"
+  [[ -n ${player:-} ]] && kill "$player" 2>/dev/null || true
+  sleep 0.3
+  # EasyEffects moves streams that target the speaker sink to itself, so the
+  # landing sink is verified rather than assumed.
+  if [[ $sink == easyeffects_sink ]]; then
+    easyeffects --bypass 2 >/dev/null 2>&1 || true
+  fi
+  mpv --no-video --no-terminal --really-quiet --volume=100 \
+    --ao=pulse --audio-device="pulse/$sink" \
+    --start="$start" --ab-loop-a="$start" \
+    --ab-loop-b="$((start + length))" "$track" &
+  player=$!
+  sleep 2
+  local want landed
+  want="$(pactl list sinks short | awk -v n="$sink" '$2 == n {print $1; exit}')"
+  landed="$(pactl list sink-inputs | awk '
+    /^Sink Input #/ {s = ""}
+    /^[[:space:]]*Sink:/ {s = $2}
+    /application\.name = "mpv"/ {print s; exit}')"
+  [[ $landed == "$want" ]] || {
+    printf 'Stream landed on sink %s, expected %s (%s).\n' \
+      "$landed" "$want" "$sink" >&2
+    return 1
+  }
+}
+
+measure_loudness() {
+  ffmpeg -hide_banner -nostats -f pulse -i "$hw.monitor" \
+    -t "$length" -filter:a ebur128 -f null - 2>&1 |
+    grep -E '^\s+I:' | tail -n 1 | awk '{print $2}'
+}
+
+offset_file="$state_dir/$(basename "$track" | tr -c 'A-Za-z0-9._-' '_').offsets"
+
+if [[ ! -r $offset_file ]]; then
+  printf 'Calibrating %d candidates over one %ss loop each...\n' \
+    "${#candidates[@]}" "$length"
+  : >"$offset_file.tmp"
+  for sink in "${candidates[@]}"; do
+    play_on "$sink" || continue
+    pactl set-sink-volume "$hw" "$original_volume"
+    lufs="$(measure_loudness)"
+    printf '%s %s\n' "$sink" "$lufs" >>"$offset_file.tmp"
+    printf '  %-24s %s LUFS\n' "$(label_for "$sink")" "$lufs"
+  done
+  mv "$offset_file.tmp" "$offset_file"
+fi
+
+declare -A lufs_of
+while read -r sink value; do
+  lufs_of[$sink]="$value"
+done <"$offset_file"
+
+quietest=""
+for sink in "${candidates[@]}"; do
+  [[ -n ${lufs_of[$sink]:-} ]] || continue
+  if [[ -z $quietest ]] ||
+    awk -v a="${lufs_of[$sink]}" -v b="${lufs_of[$quietest]}" \
+      'BEGIN {exit !(a < b)}'; then
+    quietest="$sink"
+  fi
+done
+
+volume_for() {
+  # Trim every candidate down to the quietest one so none wins on loudness.
+  awk -v base="$original_volume" -v this="${lufs_of[$1]:-0}" \
+    -v ref="${lufs_of[$quietest]:-0}" '
+    BEGIN {
+      correction = ref - this
+      if (correction > 0) correction = 0
+      v = base * (10 ^ (correction / 60))
+      if (v < 0) v = 0
+      if (v > 65536) v = 65536
+      printf "%d\n", v + 0.5
+    }'
+}
+
+index=0
+select_candidate() {
+  index="$1"
+  local sink="${candidates[$index]}"
+  play_on "$sink" || return 1
+  pactl set-sink-volume "$hw" "$(volume_for "$sink")"
+}
+
+stty_saved="$(stty -g)"
+stty -echo
+
+printf '\n  %s — looping %ss from %ss\n' "$(basename "$track")" "$length" "$start"
+printf '  level-matched to %s\n\n' "$(label_for "$quietest")"
+for i in "${!candidates[@]}"; do
+  printf '    %d  %-24s %s LUFS\n' \
+    "$((i + 1))" "$(label_for "${candidates[$i]}")" "${lufs_of[${candidates[$i]}]:-?}"
+done
+printf '\n  1-%d select   n next   q quit\n\n' "${#candidates[@]}"
+
+select_candidate 0 || true
+while true; do
+  printf '\r  >> %-28s   ' "$(label_for "${candidates[$index]}")"
+  IFS= read -rsn1 key || break
+  case "$key" in
+    [1-9])
+      i=$((key - 1))
+      ((i < ${#candidates[@]})) && { select_candidate "$i" || true; }
+      ;;
+    n | N | ' ') select_candidate $(((index + 1) % ${#candidates[@]})) || true ;;
+    q | Q)
+      printf '\n'
+      break
+      ;;
+  esac
+  kill -0 "$player" 2>/dev/null || break
+done

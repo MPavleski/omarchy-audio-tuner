@@ -1,0 +1,5 @@
+# Generated probe signal and captures
+dense.wav
+*.wav
+*.txt
+!measure/dense-freqs.txt

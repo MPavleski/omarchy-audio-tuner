@@ -1,0 +1,201 @@
+#!/bin/bash
+
+
+set -uo pipefail
+
+# Start your music first, then switch with the number keys. The playing stream is
+# moved between candidates, so nothing restarts and you keep your place.
+#
+# Filter-chain tunings are linear with fixed gain, so their relative loudness is
+# programme-independent and needs no per-track calibration. The untreated path is
+# several dB louder and gets a trim so it cannot win on level alone; that figure
+# is an average across test material, since how much a tuning reduces level does
+# depend on programme. Override it with --trim.
+#
+# Trims are applied at the hardware sink, downstream of all processing, so they
+# are a transparent gain change rather than a change to any processor's input.
+
+raw_trim="-7.4"
+[[ ${1:-} == "--trim" && -n ${2:-} ]] && raw_trim="$2"
+
+hw="$(pactl list sinks short 2>/dev/null |
+  awk '$2 ~ /^alsa_output\..*(sof_sdw|HiFi).*Speaker.*sink$/ {print $2; exit}')"
+[[ -n $hw ]] || {
+  echo "No internal speaker sink found." >&2
+  exit 1
+}
+
+present() { pactl list sinks short | awk '{print $2}' | grep -qx "$1"; }
+
+sinks=()
+bypasses=()
+labels=()
+trims=()
+add() {
+  sinks+=("$1")
+  bypasses+=("$2")
+  labels+=("$3")
+  trims+=("$4")
+}
+
+present omarchy_speaker_tuning && add omarchy_speaker_tuning - "tuned" 0
+# Extra candidates appear while authoring a tuning; see docs/AUDIO-TUNING.md.
+for sink in $(pactl list sinks short | awk '$2 ~ /^omarchy_tuning_/ {print $2}'); do
+  add "$sink" - "${sink#omarchy_tuning_}" 0
+done
+# EasyEffects moves any stream that follows the default sink to its own sink, so
+# while it runs a stream cannot be parked on a filter-chain tuning at all: it is
+# grabbed straight back. Stop it for the session and restore it on exit. Streams
+# with an explicit target are not stolen, which is why the calibrated
+# omarchy-audio-tuning-compare can include EasyEffects as a candidate and this
+# tool cannot.
+ee_stopped=0
+if ((${#sinks[@]})) && systemctl --user is-active --quiet easyeffects.service 2>/dev/null; then
+  systemctl --user stop easyeffects.service
+  ee_stopped=1
+  for _ in {1..20}; do
+    present easyeffects_sink || break
+    sleep 0.25
+  done
+fi
+
+add "$hw" - "raw (untreated)" "$raw_trim"
+
+((${#sinks[@]} > 1)) || {
+  echo "Fewer than two candidates available. Run 'omarchy audio tuning apply' first." >&2
+  exit 1
+}
+
+original_default="$(pactl get-default-sink)"
+original_volume="$(pactl get-sink-volume "$hw" | awk 'NR==1 {print $3}')"
+base_volume="$original_volume"
+index=0
+keep=0
+
+# Only real application streams are moved. A filter-chain's own output is also a
+# sink-input but has no application.name, and EasyEffects' output must stay put
+# or its chain is broken; moving either reroutes the tunings into each other.
+app_streams() {
+  pactl list sink-inputs | awk '
+    /^Sink Input #/ {id = substr($3, 2); app = ""}
+    /application\.name = / {
+      app = $0
+      sub(/.*application\.name = "/, "", app)
+      sub(/"$/, "", app)
+      if (app != "EasyEffects") print id
+    }'
+}
+
+move_streams() {
+  local target="$1" target_id moved=0 stuck=0 id now
+  target_id="$(pactl list sinks short | awk -v n="$target" '$2 == n {print $1; exit}')"
+  [[ -n $target_id ]] || return 1
+
+  local ids
+  ids="$(app_streams)"
+  for id in $ids; do
+    pactl move-sink-input "$id" "$target" 2>/dev/null
+  done
+
+  # move-sink-input reports success while leaving a pinned stream where it was,
+  # so each move is confirmed rather than assumed.
+  for id in $ids; do
+    now="$(pactl list sink-inputs | awk -v want="$id" '
+      /^Sink Input #/ {cur = substr($3, 2)}
+      cur == want && /^[[:space:]]*Sink:/ {print $2; exit}')"
+    if [[ $now == "$target_id" ]]; then
+      moved=$((moved + 1))
+    elif [[ -n $now ]]; then
+      stuck=$((stuck + 1))
+    fi
+  done
+  printf '%s %s\n' "$moved" "$stuck"
+}
+
+apply_volume() {
+  local target
+  target="$(awk -v b="$base_volume" -v t="$1" '
+    BEGIN {
+      v = b * (10 ^ (t / 60))
+      if (v < 0) v = 0
+      if (v > 65536) v = 65536
+      printf "%d", v + 0.5
+    }')"
+  pactl set-sink-volume "$hw" "$target"
+}
+
+restore_volume() {
+  pactl set-sink-volume "$hw" "$original_volume" 2>/dev/null
+  local now
+  now="$(pactl get-sink-volume "$hw" | awk 'NR==1 {print $3}')"
+  [[ $now == "$original_volume" ]] ||
+    pactl set-sink-volume "$hw" "$original_volume" 2>/dev/null
+}
+
+cleanup() {
+  [[ -n ${stty_saved:-} ]] && stty "$stty_saved" 2>/dev/null
+  if ((keep)); then
+    printf '\n  kept: %s\n' "${labels[$index]}"
+    ((ee_stopped)) &&
+      printf '  EasyEffects left stopped; "systemctl --user start easyeffects" to restore it\n'
+  else
+    pactl set-default-sink "$original_default" 2>/dev/null
+    move_streams "$original_default" >/dev/null 2>&1
+    restore_volume
+    ((ee_stopped)) && systemctl --user start easyeffects.service 2>/dev/null
+    printf '\n  restored: %s\n' "$original_default"
+  fi
+}
+
+select_candidate() {
+  index="$1"
+  [[ ${bypasses[$index]} != - ]] &&
+    easyeffects --bypass "${bypasses[$index]}" >/dev/null 2>&1
+  pactl set-default-sink "${sinks[$index]}"
+  moved_note="$(move_streams "${sinks[$index]}")"
+  apply_volume "${trims[$index]}"
+}
+
+stty_saved="$(stty -g)"
+stty -echo
+trap cleanup EXIT
+
+printf '\n  Speaker tuning candidates\n\n'
+for i in "${!sinks[@]}"; do
+  printf '    %d  %-22s' "$((i + 1))" "${labels[$i]}"
+  [[ ${trims[$i]} != 0 ]] && printf '  (%s dB trim)' "${trims[$i]}"
+  printf '\n'
+done
+printf '\n  1-%d switch   n next   +/- volume   k keep and quit   q quit\n\n' \
+  "${#sinks[@]}"
+
+select_candidate 0
+while true; do
+  read -r moved stuck <<<"${moved_note:-0 0}"
+  printf '\r  >> %-24s  %s stream(s)%s                    ' \
+    "${labels[$index]}" "$moved" \
+    "$([[ ${stuck:-0} -gt 0 ]] && printf ', %s pinned' "$stuck")"
+  IFS= read -rsn1 key || break
+  case "$key" in
+    [1-9])
+      i=$((key - 1))
+      ((i < ${#sinks[@]})) && select_candidate "$i"
+      ;;
+    n | N | ' ') select_candidate $(((index + 1) % ${#sinks[@]})) ;;
+    + | '=')
+      base_volume="$(awk -v v="$base_volume" \
+        'BEGIN {v *= 10 ^ (3 / 60); if (v > 65536) v = 65536; printf "%d", v + 0.5}')"
+      apply_volume "${trims[$index]}"
+      ;;
+    - | _)
+      base_volume="$(awk -v v="$base_volume" \
+        'BEGIN {v /= 10 ^ (3 / 60); if (v < 328) v = 328; printf "%d", v + 0.5}')"
+      apply_volume "${trims[$index]}"
+      ;;
+    k | K)
+      keep=1
+      break
+      ;;
+    q | Q) break ;;
+  esac
+done
