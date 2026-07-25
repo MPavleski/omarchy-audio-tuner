@@ -58,7 +58,7 @@ omarchy-audio-tuner generate fit.txt > filter-chain.conf
 
 Copy the result into Omarchy as
 `default/audio/tunings/<vendor>-<model>/filter-chain.conf`, add a `tuning.conf`
-beside it, and `omarchy audio tuning apply`.
+beside it, and `omarchy audio tuning on`.
 
 A reference containing a compressor has no single response — it measures
 differently under different signals. The probe here is dense and pink-weighted for
