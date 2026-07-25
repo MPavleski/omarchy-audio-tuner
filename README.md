@@ -26,10 +26,14 @@ needed to audition a generated chain, not just to author one.
 Generate the probe once, then measure, fit, and generate:
 
 ```bash
-./measure/multitone.py gen measure/dense.wav
-./measure/capture.sh <raw-speaker-sink> raw.wav
-./measure/analyse-dense.py raw.wav > raw.txt
+omarchy-audio-tuner probe                          # once, before measuring
+omarchy-audio-tuner capture <raw-speaker-sink> raw.wav
+omarchy-audio-tuner analyse raw.wav > raw.txt
 ```
+
+From a git checkout use `./omarchy-audio-tuner` instead; it is the same script.
+Generated files (the probe and its tone list) go to
+`~/.cache/omarchy-audio-tuner`, so nothing is written into the install tree.
 
 Everything measures the same way: play the probe into a sink and capture the
 result. `capture.sh` always records the **physical** speaker sink's monitor, no
@@ -45,11 +49,11 @@ right — a hand-tuned EasyEffects preset, say — and you want it as a filter-c
 Measure both paths, subtract, fit. No microphone involved.
 
 ```bash
-./measure/capture.sh <raw-sink> raw.wav && ./measure/analyse-dense.py raw.wav > raw.txt
-./measure/capture.sh <ref-sink> ref.wav && ./measure/analyse-dense.py ref.wav > ref.txt
-./measure/response-delta.py raw.txt ref.txt > target.txt   # what the tuning must do
-./fit/fit-eq.py target.txt 10 > fit.txt                    # biquads that do it
-./generate/gen-filter-chain.py fit.txt > filter-chain.conf
+omarchy-audio-tuner capture <raw-sink> raw.wav && omarchy-audio-tuner analyse raw.wav > raw.txt
+omarchy-audio-tuner capture <ref-sink> ref.wav && omarchy-audio-tuner analyse ref.wav > ref.txt
+omarchy-audio-tuner delta raw.txt ref.txt > target.txt   # what the tuning must do
+omarchy-audio-tuner fit target.txt 10 > fit.txt          # biquads that do it
+omarchy-audio-tuner generate fit.txt > filter-chain.conf
 ```
 
 Copy the result into Omarchy as
@@ -77,8 +81,8 @@ its presence lift becomes a presence *cut* in your correction.
 Measure near-field, a few centimetres out, to keep the room out of it:
 
 ```bash
-./measure/capture.sh --from <mic-source> --seconds 4 <raw-sink> acoustic.wav
-./measure/analyse-dense.py acoustic.wav > acoustic.txt   # then subtract your cal file
+omarchy-audio-tuner capture --from <mic-source> --seconds 4 <raw-sink> acoustic.wav
+omarchy-audio-tuner analyse acoustic.wav > acoustic.txt   # then subtract your cal file
 ```
 
 Second, and more importantly: **there is no correct target curve.** Flat is the
@@ -91,7 +95,7 @@ What *is* objective is the physical envelope, and it is worth establishing first
 because it decides where the high-pass goes and how much bass lift is safe:
 
 ```bash
-MIC=<mic-source> ./measure/mic-sweep.sh <sink> tone100.wav 100 raw
+MIC=<mic-source> omarchy-audio-tuner mic-sweep <sink> tone100.wav 100 raw
 ```
 
 That reports harmonic distortion against level at a fixed frequency. Because it
@@ -104,11 +108,11 @@ to lift, find where distortion takes off, and do not lift past it.
 Loudness decides blind comparisons if you let it, so both tools level-match.
 
 ```bash
-./compare/tuning-compare <track>   # calibrated A/B on one track
-./compare/tuning-switch            # move your own playing music between candidates
+omarchy-audio-tuner compare <track>   # calibrated A/B on one track
+omarchy-audio-tuner switch            # move your own playing music between candidates
 ```
 
-`tuning-switch` is the one to use with Spotify: start playing, then switch with the
+`switch` is the one to use with Spotify: start playing, then switch with the
 number keys and the stream moves without restarting. It stops EasyEffects for the
 session if it is running, because EasyEffects moves any stream that follows the
 default sink to its own sink and would grab audio back from a filter-chain.

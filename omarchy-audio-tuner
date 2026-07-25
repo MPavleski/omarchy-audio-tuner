@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+# Single entry point, so an installed package puts one command on PATH instead of
+# a dozen. Works the same from a git checkout.
+
+root="$(cd -- "$(dirname -- "$(readlink -f "$0")")" && pwd)"
+
+usage() {
+  cat <<'USAGE'
+Usage: omarchy-audio-tuner <command> [args...]
+
+  probe [out.wav]              Generate the multitone probe (once, before measuring)
+  capture <sink> <out.wav>     Play the probe into a sink and record the result
+  analyse <capture.wav>        Report the level of each probe tone
+  delta <raw.txt> <ref.txt>    Subtract two responses to get a target curve
+  fit <target.txt> [restarts]  Fit a biquad chain to a target curve
+  generate <fit.txt>           Emit a filter-chain.conf from a fit
+  tone <capture.wav> <hz>      Fundamental and harmonics of a single tone
+  mic-sweep <sink> <wav> <hz>  Acoustic distortion versus level (needs a mic)
+  compare <track>              Level-matched A/B of loaded candidates
+  switch                       Move playing audio between loaded candidates
+
+See the README for the full walkthrough.
+USAGE
+}
+
+command="${1:-}"
+[[ -n $command ]] && shift
+
+case "$command" in
+  probe) exec "$root/measure/multitone.py" gen "${1:-${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-audio-tuner/dense.wav}" ;;
+  capture) exec "$root/measure/capture.sh" "$@" ;;
+  analyse | analyze) exec "$root/measure/analyse-dense.py" "$@" ;;
+  delta) exec "$root/measure/response-delta.py" "$@" ;;
+  fit) exec "$root/fit/fit-eq.py" "$@" ;;
+  generate) exec "$root/generate/gen-filter-chain.py" "$@" ;;
+  tone) exec "$root/measure/analyze-tone.py" "$@" ;;
+  mic-sweep) exec "$root/measure/mic-sweep.sh" "$@" ;;
+  compare) exec "$root/compare/tuning-compare" "$@" ;;
+  switch) exec "$root/compare/tuning-switch" "$@" ;;
+  -h | --help | "") usage ;;
+  *)
+    printf 'Unknown command: %s\n\n' "$command" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

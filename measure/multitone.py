@@ -25,8 +25,13 @@ import sys
 import wave
 
 FS = 48000
-HERE = os.path.dirname(os.path.abspath(__file__))
-FREQ_LIST = os.path.join(HERE, "dense-freqs.txt")
+
+# Generated files go to a writable cache dir, because once this is installed as a
+# package the script's own directory is read-only.
+CACHE = os.path.join(
+    os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+    "omarchy-audio-tuner")
+FREQ_LIST = os.path.join(CACHE, "dense-freqs.txt")
 
 
 def frequencies():
@@ -62,12 +67,16 @@ def gen(path, seconds=6, target_lufs=-14.0):
             s = int(max(-1.0, min(1.0, v * scale)) * 32767)
             frames += struct.pack("<hh", s, s)
 
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with wave.open(path, "wb") as w:
         w.setnchannels(2)
         w.setsampwidth(2)
         w.setframerate(FS)
         w.writeframes(bytes(frames))
 
+    os.makedirs(CACHE, exist_ok=True)
     with open(FREQ_LIST, "w") as fh:
         fh.write("\n".join(str(f) for f in freqs) + "\n")
 

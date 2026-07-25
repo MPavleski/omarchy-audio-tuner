@@ -2,8 +2,11 @@
 """Report the level of each probe tone in a capture (leakage-free Goertzel)."""
 import math, os, struct, sys, wave
 FS=48000; WINDOW=48000
-HERE=os.path.dirname(os.path.abspath(__file__))
-freqs=[int(l) for l in open(os.path.join(HERE,"dense-freqs.txt"))]
+CACHE=os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),"omarchy-audio-tuner")
+FREQ_LIST=os.path.join(CACHE,"dense-freqs.txt")
+if not os.path.exists(FREQ_LIST):
+    sys.exit(f"No tone list at {FREQ_LIST}. Run: omarchy-audio-tuner probe")
+freqs=[int(l) for l in open(FREQ_LIST)]
 with wave.open(sys.argv[1],"rb") as w:
     ch=w.getnchannels(); raw=w.readframes(w.getnframes())
 d=struct.unpack("<%dh"%(len(raw)//2),raw)

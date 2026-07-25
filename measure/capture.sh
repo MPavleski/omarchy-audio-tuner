@@ -13,7 +13,10 @@ set -euo pipefail
 # docs/AUDIO-TUNING.md before deriving an EQ target that way.
 
 here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-probe="$here/dense.wav"
+# The probe is generated, so it lives in a writable cache dir rather than beside
+# the script, which is read-only once this is installed as a package.
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-audio-tuner"
+probe="$cache/dense.wav"
 source_name=""
 seconds=2
 
@@ -45,6 +48,7 @@ done
 
 [[ -r $probe ]] || {
   echo "Generating the probe signal first..." >&2
+  mkdir -p "$cache"
   "$here/multitone.py" gen "$probe" >&2
 }
 
