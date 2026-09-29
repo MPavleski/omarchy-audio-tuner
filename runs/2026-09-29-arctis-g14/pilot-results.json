@@ -1,0 +1,10 @@
+[
+  {
+    "frequency_hz": 1000,
+    "peak_dbfs": -46.06524661111521,
+    "rms_dbfs": -50.63888640388149,
+    "clipped_samples": 0,
+    "analysis": "fund=  -47.7 dBFS  h2=  -83.4 h3=  -87.7 h4=  -69.5 h5=  -89.9 h6=  -95.6  THD=  8.41%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/pilot/mic-g14-arctis-1000-100.wav"
+  }
+]

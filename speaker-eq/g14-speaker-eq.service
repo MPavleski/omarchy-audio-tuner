@@ -1,0 +1,16 @@
+[Unit]
+Description=ASUS G14 speaker EQ (bass +3 dB)
+After=pipewire.service pipewire-pulse.service wireplumber.service
+Requires=pipewire.service
+Wants=pipewire-pulse.service wireplumber.service
+PartOf=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pipewire -c %h/.config/pipewire/g14-speaker-eq.conf
+ExecStartPost=/usr/bin/python3 %h/.local/lib/g14-speaker-eq/route.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

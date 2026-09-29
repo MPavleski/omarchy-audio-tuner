@@ -1,0 +1,12 @@
+
+g14-arctis @ 100 Hz
+  vol  microphone
+ 100%  fund=  -74.4 dBFS  h2=  -95.5 h3=  -94.0 h4=  -93.5 h5= -101.0 h6=  -93.7  THD= 21.15%
+
+g14-arctis @ 200 Hz
+  vol  microphone
+ 100%  fund=  -59.5 dBFS  h2=  -79.7 h3=  -79.0 h4=  -69.6 h5=  -69.8 h6=  -75.6  THD= 48.64%
+
+g14-arctis @ 1000 Hz
+  vol  microphone
+ 100%  fund=  -25.8 dBFS  h2=  -65.0 h3=  -66.7 h4=  -51.4 h5=  -73.8 h6=  -70.5  THD=  5.48%

@@ -1,0 +1,98 @@
+[
+  {
+    "frequency_hz": 100,
+    "peak_dbfs": -69.48114499602985,
+    "rms_dbfs": -80.87293917668617,
+    "clipped_samples": 0,
+    "analysis": "fund=  -92.1 dBFS  h2= -108.4 h3= -109.7 h4= -114.0 h5= -126.2 h6= -115.6  THD= 22.93%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-100-100.wav"
+  },
+  {
+    "frequency_hz": 150,
+    "peak_dbfs": -63.86461280451598,
+    "rms_dbfs": -78.36158719573045,
+    "clipped_samples": 0,
+    "analysis": "fund=  -84.9 dBFS  h2= -103.7 h3= -101.0 h4= -112.4 h5= -104.9 h6=  -94.2  THD= 40.79%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-150-100.wav"
+  },
+  {
+    "frequency_hz": 200,
+    "peak_dbfs": -59.182948683848615,
+    "rms_dbfs": -75.52105287363703,
+    "clipped_samples": 0,
+    "analysis": "fund=  -78.7 dBFS  h2= -107.9 h3=  -98.3 h4=  -88.9 h5=  -88.8 h6=  -93.2  THD= 48.97%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-200-100.wav"
+  },
+  {
+    "frequency_hz": 300,
+    "peak_dbfs": -59.67942035834926,
+    "rms_dbfs": -69.1278320148253,
+    "clipped_samples": 0,
+    "analysis": "fund=  -67.2 dBFS  h2=  -97.6 h3=  -78.8 h4=  -89.7 h5=  -84.9 h6=  -87.6  THD= 31.69%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-300-100.wav"
+  },
+  {
+    "frequency_hz": 500,
+    "peak_dbfs": -52.24719895935549,
+    "rms_dbfs": -59.54321381710454,
+    "clipped_samples": 0,
+    "analysis": "fund=  -56.8 dBFS  h2=  -74.8 h3=  -76.9 h4=  -86.1 h5=  -85.6 h6=  -91.5  THD= 16.88%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-500-100.wav"
+  },
+  {
+    "frequency_hz": 750,
+    "peak_dbfs": -50.48447718534447,
+    "rms_dbfs": -54.46456928067263,
+    "clipped_samples": 0,
+    "analysis": "fund=  -51.5 dBFS  h2=  -75.1 h3=  -75.3 h4=  -81.8 h5=  -78.5 h6=  -81.8  THD= 11.17%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-750-100.wav"
+  },
+  {
+    "frequency_hz": 1000,
+    "peak_dbfs": -45.15542720181067,
+    "rms_dbfs": -49.895075462660415,
+    "clipped_samples": 0,
+    "analysis": "fund=  -46.9 dBFS  h2=  -84.2 h3=  -84.3 h4=  -69.5 h5=  -86.4 h6=  -92.2  THD=  7.75%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-1000-100.wav"
+  },
+  {
+    "frequency_hz": 1500,
+    "peak_dbfs": -48.232924280075224,
+    "rms_dbfs": -51.9931328736689,
+    "clipped_samples": 0,
+    "analysis": "fund=  -49.0 dBFS  h2=  -85.0 h3=  -90.6 h4=  -86.1 h5=  -94.4 h6=  -91.9  THD=  2.44%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-1500-100.wav"
+  },
+  {
+    "frequency_hz": 2000,
+    "peak_dbfs": -53.78750264517783,
+    "rms_dbfs": -59.829318381677524,
+    "clipped_samples": 0,
+    "analysis": "fund=  -57.2 dBFS  h2=  -67.8 h3=  -90.9 h4= -100.8 h5=  -93.0 h6=  -82.7  THD= 30.22%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-2000-100.wav"
+  },
+  {
+    "frequency_hz": 3000,
+    "peak_dbfs": -44.20197131026188,
+    "rms_dbfs": -47.9251264978761,
+    "clipped_samples": 0,
+    "analysis": "fund=  -44.9 dBFS  h2=  -92.9 h3=  -91.5 h4=  -97.8 h5= -119.6 h6= -125.5  THD=  0.66%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-3000-100.wav"
+  },
+  {
+    "frequency_hz": 5000,
+    "peak_dbfs": -46.50236473578853,
+    "rms_dbfs": -54.5178139339361,
+    "clipped_samples": 0,
+    "analysis": "fund=  -51.6 dBFS  h2=  -94.3 h3= -101.0 h4= -138.2 h5= -999.0 h6= -999.0  THD=  0.80%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-5000-100.wav"
+  },
+  {
+    "frequency_hz": 8000,
+    "peak_dbfs": -39.99152182496078,
+    "rms_dbfs": -43.09590072622015,
+    "clipped_samples": 0,
+    "analysis": "fund=  -40.1 dBFS  h2= -108.5 h3= -999.0 h4= -999.0 h5= -999.0 h6= -999.0  THD=  0.04%",
+    "recording": "/playground/omarchy-audio-tuner/runs/2026-09-29-arctis-g14/sweep/mic-g14-arctis-8000-100.wav"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "file": "quiet-original-gain.wav",
+    "rms_dbfs": -82.24252777347948,
+    "peak_dbfs": -68.72537377824186,
+    "clipped_samples": 0
+  },
+  {
+    "file": "quiet-test-gain-after.wav",
+    "rms_dbfs": -61.6799798376484,
+    "peak_dbfs": -48.72537377824187,
+    "clipped_samples": 0
+  },
+  {
+    "file": "quiet-test-gain.wav",
+    "rms_dbfs": -60.35589756076455,
+    "peak_dbfs": -44.508306471944,
+    "clipped_samples": 0
+  }
+]

@@ -1,0 +1,48 @@
+
+g14-arctis @ 100 Hz
+  vol  microphone
+ 100%  fund=  -74.9 dBFS  h2=  -90.0 h3=  -90.9 h4=  -90.3 h5=  -88.5 h6=  -90.1  THD= 39.66%
+
+g14-arctis @ 150 Hz
+  vol  microphone
+ 100%  fund=  -63.9 dBFS  h2=  -84.2 h3=  -77.5 h4=  -83.8 h5=  -86.1 h6=  -82.6  THD= 28.77%
+
+g14-arctis @ 200 Hz
+  vol  microphone
+ 100%  fund=  -58.9 dBFS  h2=  -79.6 h3=  -83.2 h4=  -81.9 h5=  -71.4 h6=  -88.4  THD= 27.42%
+
+g14-arctis @ 300 Hz
+  vol  microphone
+ 100%  fund=  -47.0 dBFS  h2=  -67.4 h3=  -61.9 h4=  -99.4 h5=  -64.7 h6=  -62.9  THD= 29.05%
+
+g14-arctis @ 500 Hz
+  vol  microphone
+ 100%  fund=  -36.7 dBFS  h2=  -61.0 h3=  -58.4 h4=  -58.9 h5=  -64.8 h6=  -80.1  THD= 13.48%
+
+g14-arctis @ 750 Hz
+  vol  microphone
+ 100%  fund=  -30.8 dBFS  h2=  -58.2 h3=  -59.9 h4=  -67.8 h5=  -60.2 h6=  -64.7  THD=  6.96%
+
+g14-arctis @ 1000 Hz
+  vol  microphone
+ 100%  fund=  -26.3 dBFS  h2=  -60.9 h3=  -63.5 h4=  -55.8 h5=  -68.8 h6=  -67.0  THD=  4.23%
+
+g14-arctis @ 1500 Hz
+  vol  microphone
+ 100%  fund=  -32.8 dBFS  h2=  -61.1 h3=  -64.3 h4=  -65.3 h5=  -76.6 h6=  -70.5  THD=  5.45%
+
+g14-arctis @ 2000 Hz
+  vol  microphone
+ 100%  fund=  -29.2 dBFS  h2=  -49.8 h3=  -66.2 h4=  -67.9 h5=  -67.8 h6=  -61.2  THD=  9.97%
+
+g14-arctis @ 3000 Hz
+  vol  microphone
+ 100%  fund=  -20.5 dBFS  h2=  -74.1 h3=  -76.5 h4=  -78.3 h5=  -92.5 h6= -101.4  THD=  0.30%
+
+g14-arctis @ 5000 Hz
+  vol  microphone
+ 100%  fund=  -27.8 dBFS  h2=  -71.1 h3=  -75.1 h4= -104.6 h5= -999.0 h6= -999.0  THD=  0.81%
+
+g14-arctis @ 8000 Hz
+  vol  microphone
+ 100%  fund=  -31.9 dBFS  h2=  -89.0 h3= -999.0 h4= -999.0 h5= -999.0 h6= -999.0  THD=  0.14%

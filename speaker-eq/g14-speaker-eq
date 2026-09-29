@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-status}" in
+  on)
+    systemctl --user enable --now g14-speaker-eq.service
+    ;;
+  off)
+    python3 "$HOME/.local/lib/g14-speaker-eq/route.py" --bypass
+    systemctl --user disable --now g14-speaker-eq.service
+    ;;
+  status)
+    systemctl --user status g14-speaker-eq.service --no-pager
+    ;;
+  *) echo 'Usage: g14-speaker-eq on|off|status' >&2; exit 2 ;;
+esac
